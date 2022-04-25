@@ -20,26 +20,32 @@ def create_world(n, m, food):
     return a
 
 
+def add_food(world, n, m, food):
+    for i in range(food // 5):
+        world[randint(0, n-1)][randint(0, m-1)] = 1
+    return world
+
+
 class Microbe:
-    def __init__(self, window, n, m, a, l):
-        self.genes = [random()-0.5 for _ in range(3*l)]
-        self.score = 0
-        self.n, self.m, self.a, self.l = n, m, a, l
+    def __init__(self, window, n, m, a, leng):
+        self.genes = [random()-0.5 for _ in range(3*leng)]
+        # self.genes = [102.4, 51.2, 25.6, 12.8, 6.4, 3.2, 1.6, 0.8, 0.4, 0.2, 0.1, -5, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.xp, self.year = 30, 0
+        self.n, self.m, self.a, self.leng = n, m, a, leng
         self.x, self.y = randint(0, n-1), randint(0, m-1)
         self.window, self.font = window, pg.font.SysFont('arial', 10)
-        self.way = (1, 1)
+        self.way = (0, 0)
 
     def draw(self):
         r = self.a // 2
         pg.draw.circle(self.window, (250, 250, 0), (self.y*self.a + r, self.x*self.a + r), int(r*0.8))
         # render = self.font.render(str(self.score), True, (0, 0, 0))
         # self.window.blit(render, (self.y*self.a + r//2, self.x*self.a + r//2))
-        pg.display.flip()
 
     def go(self, world):
         objs = []
-        for i in range(max(0, self.x - self.l), min(self.n, self.x + self.l)):
-            for j in range(max(0, self.y - self.l), min(self.m, self.y + self.l)):
+        for i in range(max(0, self.x - self.leng), min(self.n, self.x + self.leng)):
+            for j in range(max(0, self.y - self.leng), min(self.m, self.y + self.leng)):
                 if world[i][j] != 0:
                     objs.append([i - self.x, j - self.y, world[i][j]])
 
@@ -52,8 +58,8 @@ class Microbe:
                 dist.append(min(sx, sy) + abs(sx - sy))
 
             for i in range(len(dist)):
-                if dist[i] == min(dist):
-                    att[i] += self.genes[(obj[2] - 1) * self.l + dist[i]]
+                if dist[i] == min(dist) or dist[i] == min(dist)-1:
+                    att[i] += self.genes[(obj[2] - 1) * self.leng + dist[i]]
 
         good_ways = []
         for i in range(len(att)):
@@ -63,28 +69,34 @@ class Microbe:
                         good_ways.append(ways[i])
 
         if len(good_ways) > 0:
-            if not(self.way in good_ways and randint(0, 2)):
+            if not(self.way in good_ways):
                 self.way = choice(good_ways)
 
             self.x += self.way[0]
             self.y += self.way[1]
 
-    def set_score(self, world):
+    def set_xp(self, world):
         if world[self.x][self.y] == 1:
             world[self.x][self.y] = 0
-            self.score += 1
+            self.xp += 5
         if world[self.x][self.y] == 2:
             world[self.x][self.y] = 0
-            self.score -= 3
-        self.score -= 0.01
+            self.xp -= 30
 
-    def selection(self, microbe, num_children):
+        if self.xp > 0:
+            self.year += 1
+        self.xp -= 1
+
+        self.xp = 0 if self.xp < 0 else self.xp
+        self.xp = 100 if self.xp > 100 else self.xp
+
+    def selection(self, num_children):
         children = []
         for i in range(num_children):
-            child = Microbe(self.window, self.n, self.m, self.a, self.l)
+            child = Microbe(self.window, self.n, self.m, self.a, self.leng)
 
             for i in range(len(self.genes)):
-                child.genes[i] = (self.genes[i] + microbe.genes[i]) / 2
+                child.genes[i] = self.genes[i]
 
             children.append(child)
 
